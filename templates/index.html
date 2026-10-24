@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pulse — Modern Social Space</title>
+    <meta name="description" content="Pulse is a modern, next-generation social media platform with user profiles, post feeds, comments, and like/follow interactions.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <!-- FontAwesome 6 Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Main Stylesheet -->
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="dark-theme">
+    <div id="app" class="app-container">
+        
+        <!-- LEFT SIDEBAR NAVIGATION -->
+        <aside class="sidebar-left" id="sidebar-nav">
+            <div class="sidebar-header">
+                <a href="#" class="logo" id="logo-btn" onclick="app.navigate('feed'); return false;">
+                    <div class="logo-icon-wrapper">
+                        <i class="fa-solid fa-bolt"></i>
+                        <span class="logo-pulse-ring"></span>
+                    </div>
+                    <span class="logo-text">Pulse</span>
+                </a>
+            </div>
+
+            <nav class="nav-menu">
+                <button class="nav-item active" id="nav-home" onclick="app.navigate('feed')">
+                    <i class="fa-solid fa-house"></i>
+                    <span>Home Feed</span>
+                </button>
+                <button class="nav-item" id="nav-following" onclick="app.setFeedFilter('following')">
+                    <i class="fa-solid fa-user-group"></i>
+                    <span>Following</span>
+                </button>
+                <button class="nav-item" id="nav-explore" onclick="app.navigate('explore')">
+                    <i class="fa-solid fa-compass"></i>
+                    <span>Explore</span>
+                </button>
+                <button class="nav-item" id="nav-profile" onclick="app.viewMyProfile()">
+                    <i class="fa-solid fa-user"></i>
+                    <span>My Profile</span>
+                </button>
+                <button class="nav-item" id="nav-switch-persona" onclick="app.openPersonaModal()">
+                    <i class="fa-solid fa-repeat"></i>
+                    <span>Switch User</span>
+                    <span class="badge-pill">Demo</span>
+                </button>
+            </nav>
+
+            <div class="sidebar-action">
+                <button class="btn btn-primary btn-compose" id="open-compose-btn" onclick="app.focusCompose()">
+                    <i class="fa-solid fa-feather-pointed"></i>
+                    <span>Create Post</span>
+                </button>
+            </div>
+
+            <!-- Current User Mini Card -->
+            <div class="user-quick-card" id="current-user-card" onclick="app.toggleUserDropdown()">
+                <div class="avatar-wrap">
+                    <img id="my-avatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" alt="My Avatar" class="user-avatar-sm">
+                    <span class="online-indicator"></span>
+                </div>
+                <div class="user-meta">
+                    <div class="user-display-name" id="my-display-name">Elena Vance</div>
+                    <div class="user-handle" id="my-handle">@elena_v</div>
+                </div>
+                <i class="fa-solid fa-ellipsis dropdown-dots"></i>
+            </div>
+            
+            <!-- Quick Menu Popover -->
+            <div class="popover-menu hidden" id="user-popover">
+                <div class="popover-item" onclick="app.viewMyProfile()">
+                    <i class="fa-solid fa-id-badge"></i> View Profile
+                </div>
+                <div class="popover-item" onclick="app.openEditProfileModal()">
+                    <i class="fa-solid fa-pen-to-square"></i> Edit Profile
+                </div>
+                <div class="popover-item" onclick="app.openPersonaModal()">
+                    <i class="fa-solid fa-people-arrows"></i> Switch Demo Persona
+                </div>
+                <div class="popover-divider"></div>
+                <div class="popover-item text-danger" onclick="app.logout()">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i> Sign Out
+                </div>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT FEED / VIEW CONTAINER -->
+        <main class="main-content" id="main-scroll-area">
+            
+            <!-- Header bar for Feed View -->
+            <header class="feed-header" id="feed-header">
+                <div class="feed-tabs">
+                    <button class="tab-btn active" id="tab-for-you" onclick="app.setFeedFilter('for_you')">
+                        <span>For You</span>
+                        <div class="tab-indicator"></div>
+                    </button>
+                    <button class="tab-btn" id="tab-following" onclick="app.setFeedFilter('following')">
+                        <span>Following</span>
+                        <div class="tab-indicator"></div>
+                    </button>
+                </div>
+                <div class="header-actions">
+                    <button class="icon-btn" title="Refresh feed" onclick="app.loadPosts()" id="refresh-feed-btn">
+                        <i class="fa-solid fa-arrow-rotate-right"></i>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Active Tag / Search Banner (hidden by default) -->
+            <div class="filter-banner hidden" id="filter-banner">
+                <div class="filter-info">
+                    <i class="fa-solid fa-filter"></i>
+                    <span id="filter-banner-text">Showing posts for #DesignSystems</span>
+                </div>
+                <button class="btn-clear-filter" onclick="app.clearFilters()" id="clear-filter-btn">
+                    <i class="fa-solid fa-xmark"></i> Clear
+                </button>
+            </div>
+
+            <!-- POST COMPOSER CARD -->
+            <section class="composer-card" id="composer-card">
+                <div class="composer-body">
+                    <div class="composer-avatar-col">
+                        <img id="composer-avatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" alt="Current User" class="user-avatar-md">
+                    </div>
+                    <div class="composer-input-col">
+                        <textarea 
+                            id="composer-text" 
+                            placeholder="What's sparking in your mind? Share ideas, photos, or updates..." 
+                            rows="2" 
+                            maxlength="1000"
+                            oninput="app.handleComposerInput(this)"></textarea>
+
+                        <!-- Media Preview Container (If image selected) -->
+                        <div class="composer-media-preview hidden" id="composer-media-preview">
+                            <img id="composer-preview-img" src="" alt="Post Attachment Preview">
+                            <button class="remove-media-btn" onclick="app.removeComposerImage()" title="Remove image">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+
+                        <!-- Image URL input toolbar (collapsible) -->
+                        <div class="composer-image-input-bar hidden" id="composer-image-bar">
+                            <div class="input-with-icon">
+                                <i class="fa-solid fa-link"></i>
+                                <input type="url" id="image-url-input" placeholder="Paste image URL (e.g. Unsplash, imgur)..." oninput="app.onImageUrlChange(this.value)">
+                            </div>
+                            <div class="preset-images-strip">
+                                <span class="preset-label">Quick Presets:</span>
+                                <button type="button" class="preset-chip" onclick="app.applyPresetImage('tech')">⚡ Tech</button>
+                                <button type="button" class="preset-chip" onclick="app.applyPresetImage('neon')">🏮 Neon City</button>
+                                <button type="button" class="preset-chip" onclick="app.applyPresetImage('nature')">🏔️ Nature</button>
+                                <button type="button" class="preset-chip" onclick="app.applyPresetImage('space')">🌌 Galaxy</button>
+                                <button type="button" class="preset-chip" onclick="app.applyPresetImage('art')">🎨 3D Art</button>
+                            </div>
+                        </div>
+
+                        <!-- Tag input bar (collapsible) -->
+                        <div class="composer-tag-bar hidden" id="composer-tag-bar">
+                            <div class="input-with-icon">
+                                <i class="fa-solid fa-hashtag"></i>
+                                <input type="text" id="tag-input" placeholder="Tag category (e.g. AI, WebDev, Photography)..." maxlength="30">
+                            </div>
+                        </div>
+
+                        <div class="composer-footer">
+                            <div class="composer-tools">
+                                <button class="tool-btn" id="tool-image-btn" onclick="app.toggleImageBar()" title="Attach Photo">
+                                    <i class="fa-regular fa-image"></i>
+                                    <span>Photo</span>
+                                </button>
+                                <button class="tool-btn" id="tool-tag-btn" onclick="app.toggleTagBar()" title="Add Tag">
+                                    <i class="fa-solid fa-hashtag"></i>
+                                    <span>Tag</span>
+                                </button>
+                                <button class="tool-btn" id="tool-emoji-btn" onclick="app.insertEmoji('✨')" title="Add Sparkle">
+                                    <span>✨</span>
+                                </button>
+                                <button class="tool-btn" id="tool-emoji2-btn" onclick="app.insertEmoji('🚀')" title="Add Rocket">
+                                    <span>🚀</span>
+                                </button>
+                            </div>
+
+                            <div class="composer-submit-area">
+                                <span class="char-count" id="composer-char-count">1000</span>
+                                <button class="btn btn-primary" id="publish-btn" onclick="app.createPost()">
+                                    <i class="fa-solid fa-paper-plane"></i>
+                                    <span>Post</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- FEED CONTAINER: Posts will be rendered here dynamically -->
+            <section class="posts-stream" id="posts-stream">
+                <div class="feed-loader" id="feed-loader">
+                    <div class="spinner"></div>
+                    <span>Loading social feed...</span>
+                </div>
+            </section>
+
+            <!-- PROFILE VIEW CONTAINER (shown when visiting a profile) -->
+            <section class="profile-view-container hidden" id="profile-view">
+                <!-- Dynamically populated profile header and content -->
+            </section>
+
+        </main>
+
+        <!-- RIGHT SIDEBAR / EXPLORE WIDGETS -->
+        <aside class="sidebar-right" id="sidebar-widgets">
+            
+            <!-- SEARCH WIDGET -->
+            <div class="widget search-widget">
+                <div class="search-input-wrapper">
+                    <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                    <input type="text" id="global-search-input" placeholder="Search Pulse (posts, #tags, users)..." onkeyup="app.handleSearch(event)">
+                    <button class="clear-search-btn hidden" id="clear-search-btn" onclick="app.clearSearch()">
+                        <i class="fa-solid fa-circle-xmark"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- DEMO ACCOUNT SWITCHER WIDGET -->
+            <div class="widget widget-persona">
+                <div class="widget-header">
+                    <h3><i class="fa-solid fa-users-viewfinder"></i> Demo Personas</h3>
+                    <span class="subtext">1-Click Switch</span>
+                </div>
+                <p class="widget-desc">Seamlessly switch accounts to test following, liking, and commenting across multiple users:</p>
+                <div class="persona-chips" id="persona-quick-list">
+                    <!-- Loaded dynamically via JS -->
+                </div>
+            </div>
+
+            <!-- WHO TO FOLLOW WIDGET -->
+            <div class="widget follow-widget">
+                <div class="widget-header">
+                    <h3><i class="fa-solid fa-user-plus"></i> Suggested Creators</h3>
+                    <button class="text-btn" onclick="app.loadSuggestions()">Refresh</button>
+                </div>
+                <div class="suggestions-list" id="suggestions-container">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+
+            <!-- TRENDING HASHTAGS WIDGET -->
+            <div class="widget trending-widget">
+                <div class="widget-header">
+                    <h3><i class="fa-solid fa-arrow-trend-up"></i> Trending Topics</h3>
+                </div>
+                <div class="trending-list" id="trending-list">
+                    <div class="trending-item" onclick="app.filterByTag('DesignSystems')">
+                        <div class="trending-category">Technology · Trending</div>
+                        <div class="trending-tag">#DesignSystems</div>
+                        <div class="trending-count">2.4k posts</div>
+                    </div>
+                    <div class="trending-item" onclick="app.filterByTag('Photography')">
+                        <div class="trending-category">Arts · Trending</div>
+                        <div class="trending-tag">#Photography</div>
+                        <div class="trending-count">8.1k posts</div>
+                    </div>
+                    <div class="trending-item" onclick="app.filterByTag('WebDev')">
+                        <div class="trending-category">Engineering · Trending</div>
+                        <div class="trending-tag">#WebDev</div>
+                        <div class="trending-count">14.6k posts</div>
+                    </div>
+                    <div class="trending-item" onclick="app.filterByTag('AI')">
+                        <div class="trending-category">Science · Trending</div>
+                        <div class="trending-tag">#AI</div>
+                        <div class="trending-count">29.8k posts</div>
+                    </div>
+                    <div class="trending-item" onclick="app.filterByTag('3DArt')">
+                        <div class="trending-category">Creative · Trending</div>
+                        <div class="trending-tag">#3DArt</div>
+                        <div class="trending-count">4.3k posts</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FOOTER INFO -->
+            <footer class="app-info-footer">
+                <div class="footer-links">
+                    <a href="#">Privacy</a> · 
+                    <a href="#">Terms</a> · 
+                    <a href="#">Security</a> · 
+                    <a href="#">API</a>
+                </div>
+                <div class="copyright">© 2026 Pulse Social Media Platform</div>
+            </footer>
+        </aside>
+
+    </div>
+
+    <!-- MODAL: EDIT PROFILE -->
+    <div class="modal-backdrop hidden" id="edit-profile-modal">
+        <div class="modal-box modal-md">
+            <div class="modal-header">
+                <h2>Edit Your Profile</h2>
+                <button class="modal-close-btn" onclick="app.closeModal('edit-profile-modal')">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="edit-name">Display Name</label>
+                    <input type="text" id="edit-name" class="form-control" maxlength="50" placeholder="Your Name">
+                </div>
+                <div class="form-group">
+                    <label for="edit-bio">Bio</label>
+                    <textarea id="edit-bio" class="form-control" rows="3" maxlength="300" placeholder="Tell the world about yourself..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="edit-avatar">Avatar URL</label>
+                    <input type="url" id="edit-avatar" class="form-control" placeholder="https://example.com/avatar.jpg">
+                    <div class="avatar-presets">
+                        <span class="preset-label">Avatar Styles:</span>
+                        <button type="button" class="preset-chip" onclick="app.setEditAvatarPreset('female')">👩 Avatar 1</button>
+                        <button type="button" class="preset-chip" onclick="app.setEditAvatarPreset('male')">👨 Avatar 2</button>
+                        <button type="button" class="preset-chip" onclick="app.setEditAvatarPreset('robot')">🤖 Bot</button>
+                        <button type="button" class="preset-chip" onclick="app.setEditAvatarPreset('art')">🎨 Visual</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="edit-cover">Cover Banner URL</label>
+                    <input type="url" id="edit-cover" class="form-control" placeholder="https://example.com/banner.jpg">
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-half">
+                        <label for="edit-location">Location</label>
+                        <input type="text" id="edit-location" class="form-control" placeholder="e.g. San Francisco, CA">
+                    </div>
+                    <div class="form-group col-half">
+                        <label for="edit-website">Website</label>
+                        <input type="url" id="edit-website" class="form-control" placeholder="https://yourportfolio.com">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" onclick="app.closeModal('edit-profile-modal')">Cancel</button>
+                <button class="btn btn-primary" onclick="app.saveProfile()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: PERSONA SWITCHER -->
+    <div class="modal-backdrop hidden" id="persona-modal">
+        <div class="modal-box modal-md">
+            <div class="modal-header">
+                <h2><i class="fa-solid fa-users"></i> Switch Demo User</h2>
+                <button class="modal-close-btn" onclick="app.closeModal('persona-modal')">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-instruction">Select any profile below to immediately switch sessions and test interactions (like, follow, comment) from their perspective:</p>
+                <div class="persona-modal-grid" id="persona-modal-grid">
+                    <!-- Populated via JS -->
+                </div>
+                
+                <div class="modal-divider"><span>OR REGISTER A NEW USER</span></div>
+                
+                <form id="new-user-quick-form" onsubmit="app.handleQuickRegister(event)">
+                    <div class="form-row">
+                        <input type="text" id="reg-username" class="form-control col-half" placeholder="Username (e.g. jordan_k)" required pattern="[a-zA-Z0-9_]{3,20}">
+                        <input type="text" id="reg-name" class="form-control col-half" placeholder="Display Name (e.g. Jordan Knight)" required>
+                    </div>
+                    <div class="form-row mt-2">
+                        <input type="password" id="reg-password" class="form-control col-half" placeholder="Password (min 6 chars)" required minlength="6">
+                        <input type="text" id="reg-bio" class="form-control col-half" placeholder="Bio / Headline">
+                    </div>
+                    <button type="submit" class="btn btn-outline w-100 mt-2">
+                        <i class="fa-solid fa-user-plus"></i> Create & Switch to New User
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- Application Script -->
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
