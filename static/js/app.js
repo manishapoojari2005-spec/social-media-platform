@@ -53,7 +53,25 @@ class PulseApp {
             this.loadDemoUsers(),
             this.loadSuggestions()
         ]);
+
+        // Handle URL Hash Routes
+        this.handleHashRouting();
+        window.addEventListener('hashchange', () => this.handleHashRouting());
     }
+
+    handleHashRouting() {
+        const hash = window.location.hash;
+        if (hash.startsWith('#meet/')) {
+            const roomId = hash.replace('#meet/', '').trim();
+            if (roomId && window.pulseMeet) {
+                this.navigate('meet');
+                window.pulseMeet.initJoinRoom(roomId, false);
+            }
+        } else if (hash === '#meet') {
+            this.navigate('meet');
+        }
+    }
+
 
     /* -------------------------------------------------------------------------
        CSRF & API HELPERS
@@ -1006,22 +1024,50 @@ class PulseApp {
         // Reset nav item classes
         document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
 
+        const feedHeader = document.getElementById('feed-header');
+        const composerCard = document.getElementById('composer-card');
+        const postsStream = document.getElementById('posts-stream');
+        const profileView = document.getElementById('profile-view');
+        const meetLobby = document.getElementById('meet-lobby-view');
+
         if (viewName === 'feed') {
-            document.getElementById('nav-home').classList.add('active');
-            document.getElementById('feed-header').classList.remove('hidden');
-            document.getElementById('composer-card').classList.remove('hidden');
-            document.getElementById('posts-stream').classList.remove('hidden');
-            document.getElementById('profile-view').classList.add('hidden');
+            document.getElementById('nav-home')?.classList.add('active');
+            feedHeader?.classList.remove('hidden');
+            composerCard?.classList.remove('hidden');
+            postsStream?.classList.remove('hidden');
+            profileView?.classList.add('hidden');
+            meetLobby?.classList.add('hidden');
             this.loadPosts();
         } else if (viewName === 'explore') {
-            document.getElementById('nav-explore').classList.add('active');
-            document.getElementById('feed-header').classList.remove('hidden');
-            document.getElementById('composer-card').classList.add('hidden');
-            document.getElementById('posts-stream').classList.remove('hidden');
-            document.getElementById('profile-view').classList.add('hidden');
+            document.getElementById('nav-explore')?.classList.add('active');
+            feedHeader?.classList.remove('hidden');
+            composerCard?.classList.add('hidden');
+            postsStream?.classList.remove('hidden');
+            profileView?.classList.add('hidden');
+            meetLobby?.classList.add('hidden');
             this.setFeedFilter('for_you');
+        } else if (viewName === 'meet') {
+            document.getElementById('nav-meet')?.classList.add('active');
+            feedHeader?.classList.add('hidden');
+            composerCard?.classList.add('hidden');
+            postsStream?.classList.add('hidden');
+            profileView?.classList.add('hidden');
+            meetLobby?.classList.remove('hidden');
+            if (window.pulseMeet) {
+                window.pulseMeet.loadRooms();
+            }
         }
     }
+
+    openJoinCodePrompt() {
+        const code = prompt('Enter Collaboration Space ID or Code:');
+        if (code && code.trim()) {
+            if (window.pulseMeet) {
+                window.pulseMeet.initJoinRoom(code.trim(), false);
+            }
+        }
+    }
+
 
     setFeedFilter(filter) {
         this.feedFilter = filter;

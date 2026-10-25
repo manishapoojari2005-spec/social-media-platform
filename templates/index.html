@@ -13,6 +13,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <!-- Main Stylesheet -->
     <link rel="stylesheet" href="/static/css/style.css">
+    <!-- Pulse Meet Stylesheet -->
+    <link rel="stylesheet" href="/static/css/meet.css">
 </head>
 <body class="dark-theme">
     <div id="app" class="app-container">
@@ -33,6 +35,11 @@
                 <button class="nav-item active" id="nav-home" onclick="app.navigate('feed')">
                     <i class="fa-solid fa-house"></i>
                     <span>Home Feed</span>
+                </button>
+                <button class="nav-item" id="nav-meet" onclick="app.navigate('meet')">
+                    <i class="fa-solid fa-video"></i>
+                    <span>Rooms & Meet</span>
+                    <span class="badge-pill live-pill"><span class="live-dot"></span>Live</span>
                 </button>
                 <button class="nav-item" id="nav-following" onclick="app.setFeedFilter('following')">
                     <i class="fa-solid fa-user-group"></i>
@@ -213,6 +220,70 @@
                 <!-- Dynamically populated profile header and content -->
             </section>
 
+            <!-- MEET LOBBY VIEW (shown when navigating to meet) -->
+            <section class="meet-lobby-container hidden" id="meet-lobby-view">
+                <div class="meet-hero-card">
+                    <div class="meet-hero-header">
+                        <div>
+                            <span class="meet-badge">
+                                <span class="pulse-dot"></span>
+                                Real-Time WebRTC Spaces
+                            </span>
+                            <h1 class="meet-hero-title">Video Conferencing &amp; Collaboration Hub</h1>
+                            <p class="meet-hero-desc">
+                                Connect face-to-face with multi-user HD video calling, share your screen, sketch simultaneously on an interactive whiteboard, and exchange encrypted files peer-to-peer.
+                            </p>
+                            <div class="meet-hero-actions">
+                                <button class="btn btn-primary" onclick="pulseMeet.openCreateRoomModal()">
+                                    <i class="fa-solid fa-plus"></i> New Instant Space
+                                </button>
+                                <button class="btn btn-outline" onclick="app.openJoinCodePrompt()">
+                                    <i class="fa-solid fa-right-to-bracket"></i> Join with Code
+                                </button>
+                                <button class="btn btn-ghost" onclick="pulseMeet.loadRooms()">
+                                    <i class="fa-solid fa-rotate"></i> Refresh
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="meet-hero-features">
+                        <div class="meet-feature-item">
+                            <i class="fa-solid fa-video"></i>
+                            <span>Multi-User HD Mesh</span>
+                        </div>
+                        <div class="meet-feature-item">
+                            <i class="fa-solid fa-display"></i>
+                            <span>Screen &amp; Audio Share</span>
+                        </div>
+                        <div class="meet-feature-item">
+                            <i class="fa-solid fa-paintbrush"></i>
+                            <span>Real-Time Whiteboard</span>
+                        </div>
+                        <div class="meet-feature-item">
+                            <i class="fa-solid fa-shield-halved"></i>
+                            <span>DTLS/SRTP Encryption</span>
+                        </div>
+                        <div class="meet-feature-item">
+                            <i class="fa-solid fa-file-arrow-up"></i>
+                            <span>P2P Encrypted Files</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="meet-section-title-bar">
+                    <div class="meet-section-title">
+                        <i class="fa-solid fa-tower-broadcast" style="color: #6366f1;"></i>
+                        <span>Live Collaboration Rooms</span>
+                    </div>
+                    <span style="font-size: 0.82rem; color: #64748b;">Click to enter any space with your active persona</span>
+                </div>
+
+                <div class="meet-rooms-grid" id="meet-rooms-grid">
+                    <!-- Loaded dynamically via pulseMeet.loadRooms() -->
+                </div>
+            </section>
+
         </main>
 
         <!-- RIGHT SIDEBAR / EXPLORE WIDGETS -->
@@ -385,9 +456,345 @@
         </div>
     </div>
 
+    <!-- MODAL: CREATE COLLABORATION ROOM -->
+    <div class="modal-backdrop hidden" id="create-room-modal">
+        <div class="modal-box modal-md">
+            <div class="modal-header">
+                <h2><i class="fa-solid fa-video" style="color: #6366f1;"></i> Create Collaboration Space</h2>
+                <button class="modal-close-btn" onclick="app.closeModal('create-room-modal')">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <form onsubmit="pulseMeet.handleCreateRoom(event)">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="new-room-title">Meeting Title</label>
+                        <input type="text" id="new-room-title" class="form-control" placeholder="e.g. Design Systems &amp; Spatial UI Sprint" required maxlength="120">
+                    </div>
+                    <div class="form-group">
+                        <label for="new-room-passcode">Security Passcode (Optional)</label>
+                        <input type="text" id="new-room-passcode" class="form-control" placeholder="Leave empty for open access, or enter passcode">
+                        <small style="color: #64748b; font-size: 0.75rem; margin-top: 4px; display: block;">
+                            <i class="fa-solid fa-shield-halved text-success"></i> WebRTC audio/video and P2P data channels are always encrypted via DTLS-SRTP.
+                        </small>
+                    </div>
+                    <div class="form-group" style="margin-top: 16px;">
+                        <label style="margin-bottom: 8px; display: block;">Collaboration Features</label>
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            <label style="display: flex; align-items: center; gap: 8px; font-size: 0.88rem; cursor: pointer;">
+                                <input type="checkbox" id="new-room-allow-screen" checked> Allow Screen Sharing
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px; font-size: 0.88rem; cursor: pointer;">
+                                <input type="checkbox" id="new-room-allow-wb" checked> Enable Collaborative Whiteboard
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px; font-size: 0.88rem; cursor: pointer;">
+                                <input type="checkbox" id="new-room-allow-files" checked> Enable P2P &amp; Encrypted File Sharing
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-ghost" onclick="app.closeModal('create-room-modal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-bolt"></i> Launch Space</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: ROOM PASSCODE VERIFICATION -->
+    <div class="modal-backdrop hidden" id="room-passcode-modal">
+        <div class="modal-box modal-sm">
+            <div class="modal-header">
+                <h2><i class="fa-solid fa-lock" style="color: #f59e0b;"></i> Enter Meeting Passcode</h2>
+                <button class="modal-close-btn" onclick="app.closeModal('room-passcode-modal')">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <form onsubmit="pulseMeet.handleVerifyPasscode(event)">
+                <input type="hidden" id="passcode-room-id">
+                <div class="modal-body">
+                    <p style="font-size: 0.88rem; color: #94a3b8; margin-bottom: 14px;">This collaboration room is protected by a passcode set by the host.</p>
+                    <div class="form-group">
+                        <label for="passcode-input">Passcode</label>
+                        <input type="password" id="passcode-input" class="form-control" placeholder="Enter room passcode" required autofocus>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-ghost" onclick="app.closeModal('room-passcode-modal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-key"></i> Unlock &amp; Join</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- FULL-SCREEN COLLABORATION THEATER (MEET ROOM VIEW) -->
+    <div class="meet-room-container hidden" id="meet-room-view">
+        <!-- Room Top Header Bar -->
+        <header class="meet-room-header">
+            <div class="meet-header-left">
+                <div class="logo-icon-wrapper" style="width: 32px; height: 32px; font-size: 0.9rem;">
+                    <i class="fa-solid fa-bolt"></i>
+                </div>
+                <div class="room-title-group">
+                    <div class="room-header-title">
+                        <span id="active-room-title">Pulse Collaboration Space</span>
+                        <i class="fa-solid fa-lock-open" id="room-lock-icon" title="Room access state"></i>
+                    </div>
+                    <div class="room-header-meta">
+                        <span id="active-room-id">ID: 893f0b</span>
+                        <span>•</span>
+                        <span class="encryption-tag"><i class="fa-solid fa-shield-halved"></i> DTLS/SRTP E2EE</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="meet-header-center">
+                <div class="view-mode-tabs">
+                    <button class="view-mode-btn active" data-mode="video" onclick="pulseMeet.setStageMode('video')">
+                        <i class="fa-solid fa-table-cells"></i> Video Grid
+                    </button>
+                    <button class="view-mode-btn" data-mode="whiteboard" onclick="pulseMeet.setStageMode('whiteboard')">
+                        <i class="fa-solid fa-paintbrush"></i> Whiteboard
+                    </button>
+                    <button class="view-mode-btn" data-mode="split" onclick="pulseMeet.setStageMode('split')">
+                        <i class="fa-solid fa-columns"></i> Split Stage
+                    </button>
+                </div>
+            </div>
+
+            <div class="meet-header-right">
+                <div class="call-timer" id="call-timer-display">00:00</div>
+                <button class="btn btn-outline btn-sm" onclick="pulseMeet.copyInviteLink()" title="Copy Meeting Link">
+                    <i class="fa-solid fa-link"></i> Copy Link
+                </button>
+                <div id="host-controls-group" style="display: none; gap: 8px;">
+                    <button class="btn btn-ghost btn-sm" onclick="pulseMeet.toggleRoomLock()" title="Lock / Unlock Room">
+                        <i class="fa-solid fa-lock"></i>
+                    </button>
+                    <button class="btn btn-ghost btn-sm" onclick="pulseMeet.muteAll()" title="Mute Everyone">
+                        <i class="fa-solid fa-volume-xmark"></i> Mute All
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Stage Main Area -->
+        <div class="meet-stage-wrapper">
+            <div class="meet-main-stage">
+                
+                <!-- Video Grid Stage -->
+                <div class="video-grid-container" id="video-grid-container">
+                    <!-- Local Self Tile -->
+                    <div class="video-tile local-tile" id="local-video-tile">
+                        <video autoplay playsinline muted id="local-video-element"></video>
+                        <div class="video-fallback-avatar hidden" id="local-fallback-avatar">
+                            <img id="local-avatar-img" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&amp;auto=format&amp;fit=crop&amp;q=80" alt="You">
+                            <span class="avatar-username">You</span>
+                        </div>
+                        <div class="video-tile-badge">
+                            <i class="fa-solid fa-user-check"></i>
+                            <span>You</span>
+                        </div>
+                        <div class="video-tile-status">
+                            <div class="status-indicator-icon" id="local-status-mic" title="Microphone"><i class="fa-solid fa-microphone"></i></div>
+                            <div class="status-indicator-icon" id="local-status-cam" title="Camera"><i class="fa-solid fa-video"></i></div>
+                        </div>
+                    </div>
+                    <!-- Remote Peer Tiles Appended Dynamically -->
+                </div>
+
+                <!-- Collaborative Whiteboard Stage -->
+                <div class="whiteboard-stage-container hidden" id="whiteboard-stage-container">
+                    <div class="whiteboard-toolbar">
+                        <div class="wb-tools-group">
+                            <button class="wb-tool-btn active" data-tool="pen" onclick="pulseMeet.setWhiteboardTool('pen')" title="Pen Brush">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
+                            <button class="wb-tool-btn" data-tool="highlighter" onclick="pulseMeet.setWhiteboardTool('highlighter')" title="Highlighter">
+                                <i class="fa-solid fa-highlighter"></i>
+                            </button>
+                            <button class="wb-tool-btn" data-tool="eraser" onclick="pulseMeet.setWhiteboardTool('eraser')" title="Eraser">
+                                <i class="fa-solid fa-eraser"></i>
+                            </button>
+                            <div class="wb-separator"></div>
+                            <button class="wb-tool-btn" data-tool="line" onclick="pulseMeet.setWhiteboardTool('line')" title="Line">
+                                <i class="fa-solid fa-slash"></i>
+                            </button>
+                            <button class="wb-tool-btn" data-tool="arrow" onclick="pulseMeet.setWhiteboardTool('arrow')" title="Arrow">
+                                <i class="fa-solid fa-arrow-right"></i>
+                            </button>
+                            <button class="wb-tool-btn" data-tool="rect" onclick="pulseMeet.setWhiteboardTool('rect')" title="Rectangle">
+                                <i class="fa-regular fa-square"></i>
+                            </button>
+                            <button class="wb-tool-btn" data-tool="circle" onclick="pulseMeet.setWhiteboardTool('circle')" title="Circle">
+                                <i class="fa-regular fa-circle"></i>
+                            </button>
+                            <button class="wb-tool-btn" data-tool="text" onclick="pulseMeet.setWhiteboardTool('text')" title="Text Annotation">
+                                <i class="fa-solid fa-font"></i>
+                            </button>
+                        </div>
+
+                        <div class="wb-tools-group">
+                            <div class="wb-color-palette">
+                                <div class="wb-color-swatch active" data-color="#6366f1" style="background: #6366f1;" onclick="pulseMeet.setWhiteboardColor('#6366f1')"></div>
+                                <div class="wb-color-swatch" data-color="#06b6d4" style="background: #06b6d4;" onclick="pulseMeet.setWhiteboardColor('#06b6d4')"></div>
+                                <div class="wb-color-swatch" data-color="#10b981" style="background: #10b981;" onclick="pulseMeet.setWhiteboardColor('#10b981')"></div>
+                                <div class="wb-color-swatch" data-color="#f59e0b" style="background: #f59e0b;" onclick="pulseMeet.setWhiteboardColor('#f59e0b')"></div>
+                                <div class="wb-color-swatch" data-color="#ec4899" style="background: #ec4899;" onclick="pulseMeet.setWhiteboardColor('#ec4899')"></div>
+                                <div class="wb-color-swatch" data-color="#ffffff" style="background: #ffffff;" onclick="pulseMeet.setWhiteboardColor('#ffffff')"></div>
+                                <input type="color" class="wb-custom-color" value="#8b5cf6" onchange="pulseMeet.setWhiteboardColor(this.value)" title="Custom Color">
+                            </div>
+                            <div class="wb-separator"></div>
+                            <div class="wb-size-slider-wrap">
+                                <span>Size:</span>
+                                <input type="range" min="2" max="24" value="4" onchange="pulseMeet.setWhiteboardSize(this.value)">
+                            </div>
+                        </div>
+
+                        <div class="wb-tools-group">
+                            <button class="wb-tool-btn" onclick="pulseMeet.undoWhiteboardCanvas(true)" title="Undo (Ctrl+Z)">
+                                <i class="fa-solid fa-rotate-left"></i>
+                            </button>
+                            <button class="wb-tool-btn" onclick="pulseMeet.clearWhiteboardCanvas(true)" title="Clear Canvas">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                            <button class="wb-tool-btn" onclick="pulseMeet.exportWhiteboardImage()" title="Export as PNG">
+                                <i class="fa-solid fa-download"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="whiteboard-canvas-wrapper">
+                        <canvas id="whiteboard-canvas"></canvas>
+                        <!-- Live Remote Cursors Rendered Dynamically -->
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Side Collaboration Drawer -->
+            <aside class="meet-side-drawer" id="meet-side-drawer">
+                <div class="drawer-tabs-header">
+                    <button class="drawer-tab-btn active" data-tab="chat" onclick="pulseMeet.setDrawerTab('chat')">
+                        <i class="fa-regular fa-comment-dots"></i> In-Call Chat
+                    </button>
+                    <button class="drawer-tab-btn" data-tab="participants" onclick="pulseMeet.setDrawerTab('participants')">
+                        <i class="fa-solid fa-users"></i> People
+                        <span class="drawer-tab-badge" id="participants-count-badge">1</span>
+                    </button>
+                    <button class="drawer-tab-btn" data-tab="files" onclick="pulseMeet.setDrawerTab('files')">
+                        <i class="fa-solid fa-folder-open"></i> File Vault
+                    </button>
+                </div>
+
+                <div class="drawer-tab-content">
+                    
+                    <!-- Chat Pane -->
+                    <div class="drawer-tab-pane" id="tab-pane-chat">
+                        <div class="drawer-chat-messages" id="drawer-chat-messages">
+                            <!-- In-call chat messages -->
+                        </div>
+                        <div class="drawer-chat-footer">
+                            <div class="quick-reactions-strip">
+                                <button type="button" class="reaction-btn" onclick="pulseMeet.sendReaction('👏')">👏</button>
+                                <button type="button" class="reaction-btn" onclick="pulseMeet.sendReaction('❤️')">❤️</button>
+                                <button type="button" class="reaction-btn" onclick="pulseMeet.sendReaction('🔥')">🔥</button>
+                                <button type="button" class="reaction-btn" onclick="pulseMeet.sendReaction('🚀')">🚀</button>
+                                <button type="button" class="reaction-btn" onclick="pulseMeet.sendReaction('😂')">😂</button>
+                                <button type="button" class="reaction-btn" onclick="pulseMeet.sendReaction('👍')">👍</button>
+                            </div>
+                            <form class="chat-input-row" onsubmit="event.preventDefault(); pulseMeet.sendChatMessage();">
+                                <input type="text" id="meet-chat-input" placeholder="Type encrypted chat message..." autocomplete="off">
+                                <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-paper-plane"></i></button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Participants Pane -->
+                    <div class="drawer-tab-pane hidden" id="tab-pane-participants">
+                        <div class="participants-pane-header">
+                            <span style="font-size: 0.85rem; color: #94a3b8; font-weight: 600;">In this session</span>
+                        </div>
+                        <div class="participants-list" id="drawer-participants-list">
+                            <!-- Participants List Rendered Here -->
+                        </div>
+                    </div>
+
+                    <!-- File Sharing & Vault Pane -->
+                    <div class="drawer-tab-pane hidden" id="tab-pane-files">
+                        <div class="files-pane-body">
+                            <div class="p2p-encryption-notice">
+                                <i class="fa-solid fa-shield-halved"></i>
+                                <span>Zero-knowledge P2P DataChannel file transfer with SHA-256 integrity check.</span>
+                            </div>
+
+                            <div class="file-dropzone" onclick="document.getElementById('room-file-input').click()" ondragover="event.preventDefault(); this.classList.add('dragover');" ondragleave="this.classList.remove('dragover');" ondrop="event.preventDefault(); this.classList.remove('dragover'); pulseMeet.uploadRoomFile(event.dataTransfer.files[0]);">
+                                <i class="fa-solid fa-cloud-arrow-up"></i>
+                                <span class="file-dropzone-text">Click or drag &amp; drop to share file</span>
+                                <span class="file-dropzone-subtext">Direct P2P transmission + encrypted cloud vault</span>
+                                <input type="file" id="room-file-input" style="display: none;" onchange="if(this.files[0]) pulseMeet.uploadRoomFile(this.files[0])">
+                            </div>
+
+                            <div class="file-transfer-status hidden" id="file-transfer-status">
+                                <span id="file-transfer-text" style="font-size: 0.78rem; color: #94a3b8;">Transferring...</span>
+                                <div class="transfer-progress-bar">
+                                    <div class="transfer-progress-fill" id="file-transfer-fill"></div>
+                                </div>
+                            </div>
+
+                            <div class="files-list" id="files-list-container">
+                                <!-- Shared files populated here -->
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </aside>
+        </div>
+
+        <!-- Floating Bottom Control Dock -->
+        <div class="meet-bottom-controls-bar">
+            <button class="control-btn" id="btn-toggle-mic" onclick="pulseMeet.toggleAudio()" title="Toggle Microphone (M)">
+                <i class="fa-solid fa-microphone"></i>
+            </button>
+            <button class="control-btn" id="btn-toggle-cam" onclick="pulseMeet.toggleVideo()" title="Toggle Camera (V)">
+                <i class="fa-solid fa-video"></i>
+            </button>
+            <button class="control-btn" id="btn-screen-share" onclick="pulseMeet.toggleScreenShare()" title="Share Screen (S)">
+                <i class="fa-solid fa-display"></i>
+            </button>
+            <button class="control-btn" id="btn-toggle-wb" onclick="pulseMeet.setStageMode(pulseMeet.activeStageMode === 'whiteboard' ? 'video' : 'whiteboard')" title="Toggle Whiteboard Canvas">
+                <i class="fa-solid fa-paintbrush"></i>
+            </button>
+            
+            <div style="width: 1px; height: 32px; background: rgba(255, 255, 255, 0.1); margin: 0 4px;"></div>
+
+            <button class="control-btn" onclick="pulseMeet.setDrawerTab('chat')" title="In-Call Chat">
+                <i class="fa-regular fa-comment-dots"></i>
+            </button>
+            <button class="control-btn" onclick="pulseMeet.setDrawerTab('participants')" title="Participants">
+                <i class="fa-solid fa-users"></i>
+            </button>
+            <button class="control-btn" onclick="pulseMeet.setDrawerTab('files')" title="Shared Files">
+                <i class="fa-solid fa-folder-open"></i>
+            </button>
+            <button class="control-btn" onclick="pulseMeet.toggleDrawer()" title="Toggle Side Panel">
+                <i class="fa-solid fa-table-columns"></i>
+            </button>
+
+            <div style="width: 1px; height: 32px; background: rgba(255, 255, 255, 0.1); margin: 0 4px;"></div>
+
+            <button class="control-btn leave-btn" onclick="pulseMeet.leaveRoom(true)" title="Leave Meeting">
+                <i class="fa-solid fa-phone-slash"></i> Leave Space
+            </button>
+        </div>
+    </div>
+
     <!-- TOAST NOTIFICATION CONTAINER -->
     <div class="toast-container" id="toast-container"></div>
 
+    <!-- Meet Engine Script -->
+    <script src="/static/js/meet.js"></script>
     <!-- Application Script -->
     <script src="/static/js/app.js"></script>
 </body>

@@ -23,14 +23,24 @@ A sleek, modern social media platform built with **Vanilla HTML, CSS & JavaScrip
    - One-click Follow / Unfollow creators from feed cards, profile headers, or the "Suggested Creators" sidebar widget.
    - "Following" feed filter showing updates exclusively from creators you follow.
 
-4. **1-Click Demo Persona Switcher**:
-   - Switch seamlessly between 5 pre-seeded creators (Elena Vance, Alex Rivera, Maya Lin, David Kim, and Dr. Sophia Chen) or register your own new account to test multiplayer social interactions immediately.
+4. **Real-Time Communication & Collaboration Suite (Pulse Meet)**:
+   - **Multi-User Video & Audio Conferencing**: Full-mesh WebRTC media streams with dynamic grid layout (1, 2, 4+ participants), active speaker detection with glowing borders, microphone mute/unmute, camera toggle, and fallback avatar states.
+   - **Screen Sharing**: Native `navigator.mediaDevices.getDisplayMedia` integration that dynamically replaces video tracks across all active peer connections.
+   - **Collaborative Whiteboard**: Synchronized HTML5 canvas with freehand brush, highlighter, eraser, shapes (rectangle, circle, line, arrow), text tool, color palettes, undo history, clear board, PNG export, and real-time remote mouse cursor tracking with participant name tags.
+   - **P2P & Encrypted File Sharing**: High-speed chunked file transfer over WebRTC `RTCDataChannel` plus a secure server-backed room file vault with SHA-256 integrity checksum verification.
+   - **In-Call Chat & Floating Emoji Bursts**: Encrypted in-meeting messaging with timestamps and animated floating emoji reactions (👏, ❤️, 🔥, 🚀, 😂, 👍).
+   - **Security & Data Encryption**: WebRTC DTLS-SRTP media encryption standard, optional meeting passcodes, room lock toggles, and host moderation controls (Mute All, Kick Participant).
+   - **Django Channels & Daphne ASGI Signaling**: 100% self-hosted asynchronous WebSocket signaling backend with session authentication.
 
-5. **Aesthetics & UX**:
+5. **1-Click Demo Persona Switcher**:
+   - Switch seamlessly between 5 pre-seeded creators (Elena Vance, Alex Rivera, Maya Lin, David Kim, and Dr. Sophia Chen) or register your own new account to test multiplayer social interactions and video meetings immediately across multiple tabs.
+
+6. **Aesthetics & UX**:
    - Obsidian dark mode with glassmorphic cards (`backdrop-filter: blur(16px)`).
    - Plus Jakarta Sans typography, vibrant gradients, and micro-interactions.
    - Instant search across post content, usernames, and `#tags`.
    - Responsive layout for desktop, tablet, and mobile.
+
 
 ---
 
